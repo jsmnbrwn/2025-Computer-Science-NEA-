@@ -13,6 +13,8 @@ SCREEN_WIDTH = 1400
 SCREEN_HEIGHT = 1000
 
 GRAV = 5
+JUMP_HEIGHT = 1.75
+JUMP_SPEED = 0.95
 
 
 
@@ -80,7 +82,7 @@ class catChar():
 		self.run.append(pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/run 4.png")).convert_alpha(),scale))
 		self.run.append(pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/run 5.png")).convert_alpha(),scale))
 		self.run.append(pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/run 6.png")).convert_alpha(),scale))
-		self.run.append("0.045")
+		self.run.append("0.05")
 
 		self.POINTS = 0 
 
@@ -161,28 +163,7 @@ class catChar():
 						dy = obj.rect.top - self.rect.bottom
 						self.vel_y = 0
 						self.isJump = False
-
-
-			
-			# if self.rect.bottom < obj.rect.top:
-
-			# 	if not self.left:
-			# 		if obj.rect.colliderect(self.rect.x+100,self.rect.y+dy,self.width,self.height):
-			# 			print("colliding R",dy)
-			# 			self.onPlatform = True
-			# 			isJump = False
-			# 			dy = 0
-							
-			# 			self.vel_y = 0
-			# 	elif obj.rect.colliderect(self.rect.x,self.rect.y+dy,self.width,self.height):
-			# 			print("colliding L",dy)
-			# 			self.onPlatform = True
-			# 			isJump = False
-			# 			dy = 0
-						
-		# print('vel_y',self.vel_y)
-		# print('rect.y',self.rect.y)
-		# print('dy',dy)
+	
 		return dx,dy
 
 
@@ -195,11 +176,11 @@ class catChar():
 		key_pressed = pygame.key.get_pressed()
 
 		if key_pressed[pygame.K_d]:
-			dx += 1.5
+			dx += 2
 			self.left = False
 			self.moving = True
 		elif key_pressed[pygame.K_a]:
-			dx -= 1.5
+			dx -= 2
 			self.left = True
 			self.moving = True
 		else:
@@ -207,7 +188,7 @@ class catChar():
 
 		
 		if key_pressed[pygame.K_LSHIFT]:
-			dx *= 1.7
+			dx *= 1.8
 			self.sprint = True
 		else:
 			self.sprint = False
@@ -221,13 +202,13 @@ class catChar():
 		#Uses a quadratic for the jump movement in order for there to be a slight pause at the top.
 		if self.isJump:
 			if self.jumpCount > -45:
-				isJump = True
-
-				self.vel_y = ((self.jumpCount * GRAV) * -0.5) / 15
-				self.jumpCount -= 0.65
+				self.vel_y = (((self.jumpCount * GRAV) * -0.5) / 15) * JUMP_HEIGHT
+				self.jumpCount -= JUMP_SPEED
 			else:
 				self.jumpCount = 45
 				self.isJump = False
+
+			dy = self.vel_y
 
 			dy = self.vel_y
 			

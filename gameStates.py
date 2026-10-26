@@ -3,13 +3,13 @@ import pygame, objectClass, charClass
 SCREEN_WIDTH = 1400
 SCREEN_HEIGHT = 1000
 
-SCREEN = pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))  
+#NOTE: no set_mode() here any more - the main file creates the window before importing this file
 
-#loading of different backgrounds
-kitchenBackground = pygame.image.load("images/kitchenBackground.png").convert_alpha()
-bedroomBackground = pygame.image.load("images/bedroomBackground.png").convert_alpha()
-loungeBackground = pygame.image.load("images/loungeBackground3.png").convert_alpha()
-bathroomBackground = pygame.image.load("images/bathroomBackground.png").convert_alpha()
+#loading of different backgrounds (opaque, so convert() is faster than convert_alpha())
+kitchenBackground = pygame.image.load("images/kitchenBackground.png").convert()
+bedroomBackground = pygame.image.load("images/bedroomBackground.png").convert()
+loungeBackground = pygame.image.load("images/loungeBackground3.png").convert()
+bathroomBackground = pygame.image.load("images/bathroomBackground.png").convert()
 
 #loading of different sounds
 crashSound = pygame.mixer.Sound("music/crashSound.wav")
@@ -21,6 +21,29 @@ bookFallSound = pygame.mixer.Sound("music/bookFallSound.wav")
 soundList = [crashSound,foodSound,metalSound,paperSound,bookFallSound]
 
 backgroundList = [kitchenBackground,loungeBackground,bedroomBackground,bathroomBackground]
+
+
+def drawRoom(SCREEN,event,cat,roomObj,roomPlat,background):
+	#draws the room's own background first so it always matches the objects being drawn
+	SCREEN.blit(background,(0,0))
+
+	pygame.mouse.set_visible(False)
+
+	#iterates through every object on screen and checks for collisions and thus checks for 
+	#any potential points to be added
+	for obj in roomObj:
+		obj.handleEvents(SCREEN,cat.attack,cat.rect)
+		cat.POINTS += obj.points
+
+	#draws platforms
+	for plat in roomPlat:
+		plat.draw(SCREEN)
+
+	#draws cat
+	cat.draw(SCREEN,event,roomPlat)
+
+	return background
+
 
 def objectLoadKitchen():
 	#creation of platforms and objects and compiling them into a list
@@ -46,26 +69,8 @@ def objectLoadKitchen():
 
 	return kitchenObj, kitchenPlat
 
-
-
-def kitchen(SCREEN,event,Cat,kitchenObj,kitchenPlat):
-	
-	pygame.mouse.set_visible(False)
-	
-	#iterates through every object on screen and checks for collisions and thus checks for 
-	#any potential points to be added
-	for obj in kitchenObj:
-		obj.handleEvents(SCREEN,Cat.attack,Cat.rect) 
-		Cat.POINTS += obj.points
-		
-	#draws platforms
-	for plat in kitchenPlat:
-		plat.draw(SCREEN)
-
-	#draws cat
-	Cat.draw(SCREEN,event,kitchenPlat)
-
-	return backgroundList[0]
+def kitchen(SCREEN,event,cat,kitchenObj,kitchenPlat):
+	return drawRoom(SCREEN,event,cat,kitchenObj,kitchenPlat,kitchenBackground)
 
 
 def objectLoadBedroom():
@@ -78,7 +83,6 @@ def objectLoadBedroom():
 	bookcase = objectClass.objectPoints(-100,320,"Bookcase1",5.6,soundList[4],100)
 	painting = objectClass.objectPoints(631,158,"painting4",8.5,soundList[3],50)
 
-	# bed = objectClass.objectSolid(-10,205,"Cupboard1",4.1)
 	dresser = objectClass.objectSolid(1073,640,"Dresser2",5)
 	plat1 = objectClass.objectSolid(900,250,"platformV",2.8)
 	plat2 = objectClass.objectSolid(1200,250,"platformV",2.8)
@@ -95,22 +99,8 @@ def objectLoadBedroom():
 
 	return bedroomObj, bedroomPlat
 
-def bedroom(SCREEN,event,Cat,bedroomObj,bedroomPlat):
-
-	pygame.mouse.set_visible(False)
-
-	#iterates through every object on screen and checks for collisions and thus checks for 
-	#any potential points to be added
-	for obj in bedroomObj:
-		obj.handleEvents(SCREEN,Cat.attack,Cat.rect)
-		Cat.POINTS += obj.points
-	#draws platforms
-	for plat in bedroomPlat:
-		plat.draw(SCREEN)
-	#draws cat
-	Cat.draw(SCREEN,event,bedroomPlat)
-
-	return backgroundList[2]
+def bedroom(SCREEN,event,cat,bedroomObj,bedroomPlat):
+	return drawRoom(SCREEN,event,cat,bedroomObj,bedroomPlat,bedroomBackground)
 
 
 def objectLoadLounge():
@@ -139,21 +129,7 @@ def objectLoadLounge():
 	return loungeObj, loungePlat
 
 def lounge(SCREEN,event,cat,loungeObj,loungePlat):
-
-	pygame.mouse.set_visible(False)
-
-	#iterates through every object on screen and checks for collisions and thus checks for 
-	#any potential points to be added
-	for obj in loungeObj:
-		obj.handleEvents(SCREEN,cat.attack,cat.rect)
-		cat.POINTS += obj.points
-	#draws platforms
-	for plat in loungePlat:
-		plat.draw(SCREEN)
-	#draws cat
-	cat.draw(SCREEN,event,loungePlat)
-
-	return backgroundList[1]
+	return drawRoom(SCREEN,event,cat,loungeObj,loungePlat,loungeBackground)
 
 
 def objectLoadBathroom():
@@ -173,25 +149,10 @@ def objectLoadBathroom():
 	plat6 = objectClass.objectSolid(525,366,"platformVDark",2.2)
 	plat7 = objectClass.objectSolid(1200,185,"platformVDark",2.5)
 
-	bathroomObj = [mirror, painting, box, toilet, clotheshanger,piggyBank]
+	bathroomObj = [mirror,painting,box,toilet,clotheshanger,piggyBank]
 	bathroomPlat = [plat1,plat2,plat3,plat4,plat5,plat6,plat7]
 
 	return bathroomObj, bathroomPlat
 
-def bathroom(SCREEN, event, cat, bathroomObj, bathroomPlat):
-
-	pygame.mouse.set_visible(False)
-
-	#iterates through every object on screen and checks for collisions and thus checks for 
-	#any potential points to be added
-	for obj in bathroomObj:
-		obj.handleEvents(SCREEN,cat.attack,cat.rect)
-	cat.POINTS += obj.points
-	#draws platforms
-	for plat in bathroomPlat:
-		plat.draw(SCREEN)
-
-	#draws cat
-	cat.draw(SCREEN,event,bathroomPlat)
-
-	return backgroundList[3]
+def bathroom(SCREEN,event,cat,bathroomObj,bathroomPlat):
+	return drawRoom(SCREEN,event,cat,bathroomObj,bathroomPlat,bathroomBackground)

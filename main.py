@@ -1,7 +1,7 @@
 import pygame, random, sys, os, pygame.mixer
 import sqlite3, hashlib
 
-import buttonClass, charClass, catSprite, textBoxClass, objectClass, gameStates, cutScene
+import buttonClass, charClass, catSprite, textBoxClass, objectClass, cutScene
 
 pygame.init()
 pygame.mixer.init()
@@ -14,7 +14,8 @@ try:
     pygame.Window.from_display_module().maximize()
 except AttributeError:
     pass    
-pygame.display.set_caption("CATastrophe")                                                 
+pygame.display.set_caption("CATastrophe")      
+import gameStates                                           
 #Initializes db connection and pygame display
 dataConnection = sqlite3.connect('AccountData')
 dataCursor = dataConnection.cursor()
@@ -70,15 +71,15 @@ blankEvent = pygame.event.Event(pygame.event.custom_type())
 
 
 #Loads all images:
-BaseBackground = pygame.image.load("images/BaseBackground.png")
-MainBackground = pygame.image.load("images/MainBackground.png")
-MainBackground2 = pygame.image.load("images/MainBackground2.png")
-SignupBackground = pygame.image.load("images/SignupBackground2.png")
-LoginBackground = pygame.image.load("images/LoginBackground2.png")
-leaderboardBackground = pygame.image.load("images/leaderboardBackground.png")
-customizeBackground = pygame.image.load("images/customizeBackground.png")
-FriendBackground = pygame.image.load("images/friendBackground.png")
-AccountBackground = pygame.image.load("images/accountBackground.png")
+BaseBackground = pygame.image.load("images/BaseBackground.png").convert()
+MainBackground = pygame.image.load("images/MainBackground.png").convert()
+MainBackground2 = pygame.image.load("images/MainBackground2.png").convert()
+SignupBackground = pygame.image.load("images/SignupBackground2.png").convert()
+LoginBackground = pygame.image.load("images/LoginBackground2.png").convert()
+leaderboardBackground = pygame.image.load("images/leaderboardBackground.png").convert()
+customizeBackground = pygame.image.load("images/customizeBackground.png").convert()
+FriendBackground = pygame.image.load("images/friendBackground.png").convert()
+AccountBackground = pygame.image.load("images/accountBackground.png").convert()
 
 outroBackground = pygame.image.load("images/outroBackground.png").convert_alpha()
 introBackground =  pygame.image.load("images/introBackground.png").convert_alpha()
@@ -286,10 +287,10 @@ def friendListItems():
 	
 	return friendUserText, friendScoreText, friendColourText
 
-menuCat1 = catSprite.catSprite(0,720,13,"run",10,'random')
-menuCat2 = catSprite.catSprite(450,720,13,"walk",5,'random')
-menuCat3 = catSprite.catSprite(900,720,13,"walk",5,'random')
-menuCat4 = catSprite.catSprite(1400,720,13,"walk",5,'random')
+menuCat1 = catSprite.catSprite(0,720,13,"run",3,'random')
+menuCat2 = catSprite.catSprite(450,720,13,"walk",1.5,'random')
+menuCat3 = catSprite.catSprite(900,720,13,"walk",1.5,'random')
+menuCat4 = catSprite.catSprite(1400,720,13,"walk",1.5,'random')
 
 
 EMPTY_STRING = ""
@@ -422,7 +423,7 @@ def checkUnlocked(accData):
 	highscore = dataCursor.fetchone()
 	highscore = int(highscore[0])
 
-	scoreList = [200,500,750,1000]
+	scoreList = [300,700,1000,1300]
 	newSkinData = '1' 
 
 	for score in scoreList:
@@ -454,12 +455,6 @@ def customizeCat(SCREEN,event,mouse_pos,state_stack,accData,loggedIn):
 	#displays the buttons which allow the user to return to main menu or choose a different avatar
 	if customizeBackwardButton.draw(SCREEN,event,mouse_pos):
 		state_stack.pop()
-
-	checkUnlocked(accData)
-
-	unlockSkins(accData)
-
-
 
 	for avatar in customizeSelectList:
 		if avatar.draw(SCREEN,event,mouse_pos):
@@ -821,7 +816,7 @@ def deleteUser(targetUser, accData):
 def displayFriends(accData,friendUserList,friendHighscoreList,friendActiveCat):
 	#iterates through the friends the user has and updates the on-screen objects in order for them to 
 	#correctly display the friend’s usernames, highscores and active colours.
-	friendUserText, friendScoreText, friendColourText = friendListItems()
+	#friendUserText, friendScoreText, friendColourText = friendListItems()
 	
 	friendAmount = str(len(friendUserList))
 	
@@ -1138,9 +1133,20 @@ def accountScreen(SCREEN,event,mouse_pos,state_stack,accData,keyPressed,loggedIn
 
 	return state_stack, accData, loggedIn
 
+
+MENU_BACKGROUNDS = {
+    "login": LoginBackground,
+    "signup": SignupBackground,
+    "leaderboard": leaderboardBackground,
+    "customize": customizeBackground,
+    "friends": FriendBackground,
+    "account": AccountBackground,
+}
+
 def main():
 
 	run = True
+	clock = pygame.time.Clock()
 	objList = [kitchenObj,loungeObj,bedroomObj,bathroomObj]
 	platList = [kitchenPlat,loungePlat,bedroomPlat,bathroomPlat]
 
@@ -1168,10 +1174,12 @@ def main():
 	gameLoad.onScreen = True 
 
 	while run:
-
-		
-		
 		menu_state = state_stack[-1]
+
+		if menu_state == "main" and not gameOutro.onScreen:
+			background = MainBackground2 if loggedIn else MainBackground
+		elif menu_state in MENU_BACKGROUNDS:
+			background = MENU_BACKGROUNDS[menu_state]
 
 		displayWindow(background,menu_state,loggedIn,accData)
 
@@ -1233,6 +1241,7 @@ def main():
 			if loggedIn:
 				dataCursor.execute("SELECT * from accountData where username = ?",[account])
 				accData = dataCursor.fetchone()
+				catAvatar = charClass.catChar(600,840,int(accData[4]),8)
 				
 
 
@@ -1241,8 +1250,12 @@ def main():
 			handleleaderboard(SCREEN,event,mouse_pos,state_stack,loggedIn,accData,keyPressed,)
 		
 		if menu_state == "customize":
+			checkUnlocked(accData)
+			unlockSkins(accData)
 			accData = customizeCat(SCREEN,event,mouse_pos,state_stack,accData,loggedIn)
 			background = customizeBackground
+			if catAvatar.colour != skinList[int(accData[4])]:
+				catAvatar.changeColour(int(accData[4]))
 			#catAvatar.changeColour(int(accData[4])) 
 			
 		if menu_state == "play":
@@ -1294,6 +1307,8 @@ def main():
 			
 
 		pygame.display.update()
+		clock.tick(140)
+		
 		event = blankEvent
 		keyPressed = EMPTY_STRING
 

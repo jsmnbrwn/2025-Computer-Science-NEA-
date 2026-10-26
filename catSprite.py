@@ -12,6 +12,19 @@ SCREEN_HEIGHT = 1000
 
 GRAV = 5
 
+ANI_SPEEDS = {"walk":0.05, "run":0.095, "idle":0.01, "static":0}
+imageCache = {}
+
+def loadSprite(colour,name,scale):
+		key = (colour,name,scale)
+		if key not in imageCache:
+			image = pygame.image.load("sprites/"+colour+"/"+name+".png").convert_alpha()
+			image = pygame.transform.scale_by(image,scale)
+			image = pygame.transform.flip(image,True,False)
+			imageCache[key] = image
+
+		return imageCache[key]
+
 class catSprite():
 	def __init__(self,x,y,scale,ani,speed,colour):
 		#Intiializes variables like the cat’s coordinates or the rect representing the cat
@@ -26,73 +39,41 @@ class catSprite():
 			self.colour = skinList[(random.randint(0,4))]
 		else:
 			self.colour = skinList[int(colour)]
+
 		self.ani = ani
-		self.image = pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/stand.png")),self.scale)
+		self.aniSpeed = ANI_SPEEDS.get(ani,0.2)
 		self.reset = False
 		self.speed = speed
 
-		# different animation lists where the images are loaded of the correct cat
-		#each list is ended with a float value which represents the animation speed.
-		if ani == 'static':
-			self.animation = []
-			self.animation.append(pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/stand.png")),scale))
-
-		
-		elif ani == 'idle':
-
-			self.idleList = []
-			self.idleList.append(self.image)
-			self.idleList.append(pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/sitting.png")),scale))
-			self.idleList.append(pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/sleeping.png")),scale))
-			self.idleList.append(pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/sitting.png")),scale))
-			self.idleList.append("0.01")
-
-		elif ani != 'idle':
-			self.animation = []
-			self.animation.append(pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/"+ani+" 1.png")),scale))
-			self.animation.append(pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/"+ani+" 2.png")),scale))
-			self.animation.append(pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/"+ani+" 3.png")),scale))
-			self.animation.append(pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/"+ani+" 4.png")),scale))
-			self.animation.append(pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/"+ani+" 5.png")),scale))
-			self.animation.append(pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/"+ani+" 6.png")),scale))
-
-			if ani == "walk":
-				self.animation.append("0.2")
-			if ani == "run":
-				self.animation.append("0.3")
-
+		self.frames = []
+		self.loadedColour = None
 		self.current_sprite = 0
 
-	def change(self):
-		#used to update the object with a new colour
+		self.change()
+		self.image = self.frames[0]
 		
-		if self.ani == 'idle':
-			self.idleList[0] = pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/stand.png")),self.scale)
-			self.idleList[1] = pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/sitting.png")),self.scale)
-			self.idleList[2] = pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/sleeping.png")),self.scale)
-			self.idleList[3] = pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/sitting.png")),self.scale)
 
-		elif self.ani == 'static':
-			self.image = pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/stand.png")),self.scale)
-
+	def change(self):
+	#updates the frames to the current colour, using the cache
+		if self.ani == 'static':
+			names = ["stand"]
+		elif self.ani == 'idle':
+			names = ["stand","sitting","sleeping","sitting"]
 		else:
-			self.animation[0] = pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/"+self.ani+" 1.png")),self.scale)
-			self.animation[1] = pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/"+self.ani+" 2.png")),self.scale)
-			self.animation[2] = pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/"+self.ani+" 3.png")),self.scale)
-			self.animation[3] = pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/"+self.ani+" 4.png")),self.scale)
-			self.animation[4] = pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/"+self.ani+" 5.png")),self.scale)
-			self.animation[5] = pygame.transform.scale_by((pygame.image.load("sprites/"+self.colour+"/"+self.ani+" 6.png")),self.scale)
+			names = [self.ani+" "+str(i) for i in range(1,7)]
+
+		self.frames = [loadSprite(self.colour,name,self.scale) for name in names]
+		self.loadedColour = self.colour
 
 
 	def animate(self):
 		#runs the animation by iterating through the frame list
-		self.current_sprite += float(self.animation[-1])
-		
+		self.current_sprite += self.aniSpeed
 
-		if self.current_sprite >= len(self.animation) - 1:
+		if self.current_sprite >= len(self.frames):
 			self.current_sprite = 0
 
-		self.image = self.animation[int(self.current_sprite)]
+		self.image = self.frames[int(self.current_sprite)]
 
 	def movement(self):
 		#used for if the cats on the menu run off screen, they are repositioned on the right hand side 
@@ -107,33 +88,20 @@ class catSprite():
 			self.reset = False
 
 
-	def idleMovement(self):
-		#handles the idle movement of the active skin display
-		self.current_sprite += float(self.idleList[-1])
-
-		if self.current_sprite >= len(self.idleList) - 1:
-			self.current_sprite = 0
-
-		self.image = self.idleList[int(self.current_sprite)]
-
 	def draw(self,surface):
 		#draws object on screen and runs other subroutines
-		if self.ani == 'static':
-			self.change()
-			surface.blit(pygame.transform.flip(self.image, True, False), (self.x,self.y))
-		elif self.ani != "idle":
-
+		if self.ani != 'static' and self.ani != 'idle':
 			self.movement()
-			if self.reset:
-				self.change()
-			self.animate()
-			surface.blit(pygame.transform.flip(self.image, True,False),(self.x,self.y))
-
-		else:
-			
-			
+	
+		if self.colour != self.loadedColour:
 			self.change()
-			self.idleMovement()
-			surface.blit(pygame.transform.flip(self.image, True, False), (self.x,self.y))
+
+		if self.ani == 'static':
+			self.image = self.frames[0]
+		else:
+			self.animate()
+			
+		surface.blit(self.image,(self.x,self.y))
+
 
 
